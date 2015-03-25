@@ -23,7 +23,7 @@ public class Utils {
         mService = service;
     }
     
-    
+    // 返回当前系统时间
     public static long currentTimeInMillis() {
         Time time = new Time();
         // 设置到当前时间

@@ -193,7 +193,10 @@ public class Pedometer extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case MENU_PAUSE:
-                unbindStepService();
+                if (mIsRunning) {
+                    unbindStepService();
+                }
+//                unbindStepService();
                 stopStepService();
                 return true;
             case MENU_RESUME:
@@ -205,7 +208,10 @@ public class Pedometer extends Activity {
                 return true;
             case MENU_QUIT:
                 resetValues(false);
-                unbindStepService();
+                if (mIsRunning) {
+                    unbindStepService();
+                }
+//                unbindStepService();
                 stopStepService();
                 mQuitting = true;
                 finish();

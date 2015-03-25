@@ -4,8 +4,11 @@ import java.util.ArrayList;
 
 public class StepDisplayer implements StepListener {
 
+	// 步数变量
     private int mCount = 0;
+    // 应用设置
     PedometerSettings mSettings;
+    // 工具类，获取系统当前时间
     Utils mUtils;
 
     public StepDisplayer(PedometerSettings settings, Utils utils) {
@@ -13,6 +16,7 @@ public class StepDisplayer implements StepListener {
         mSettings = settings;
         notifyListener();
     }
+    
     public void setUtils(Utils utils) {
         mUtils = utils;
     }

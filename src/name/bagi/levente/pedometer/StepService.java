@@ -19,21 +19,35 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
+/**
+ * 步数统计服务
+ * 前台运行service
+ * @author anyang
+ *
+ */
 public class StepService extends Service {
+	// 测试标签
 	private static final String TAG = "name.bagi.levente.pedometer.StepService";
+	// 使用sharedpreferences存储配置信息
     private SharedPreferences mSettings;
     private PedometerSettings mPedometerSettings;
     private SharedPreferences mState;
     private SharedPreferences.Editor mStateEditor;
+    // 工具类，返回系统时间
     private Utils mUtils;
+    // 传感器管理器
     private SensorManager mSensorManager;
+    // 传感器类
     private Sensor mSensor;
+    // 步数检测程序
     private StepDetector mStepDetector;
+    // 步数统计结果显示
     private StepDisplayer mStepDisplayer;
-    
+    // 保持屏幕常亮
     private PowerManager.WakeLock wakeLock;
+    // 状态栏通知管理器
     private NotificationManager mNM;
-
+    // 步数变量
     private int mSteps;
     
 
@@ -47,8 +61,9 @@ public class StepService extends Service {
     public void onCreate() {
         Log.i(TAG, "[SERVICE] onCreate");
         super.onCreate();
-        // 前台运行service
+        // 获取系统通知service
         mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+        // 设置通知参数
         showNotification();
         
         // 加载设置
@@ -63,10 +78,13 @@ public class StepService extends Service {
         
         // 开始检测步数
         mStepDetector = new StepDetector();
+        // 获取系统传感器管理器对象
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        // 注册检测器
         registerDetector();
 
-        // 注册接收器
+        // 注册接收器（Intent.ACTION_SCREEN_OFF：按power键的时候，关闭和打开屏幕都会发送广播，
+        // 一个是Intent.ACTION_SCREEN_OFF，还有一个是Intent.ACTION_SCREEN_ON）
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
         registerReceiver(mReceiver, filter);
 
@@ -111,15 +129,19 @@ public class StepService extends Service {
     }
 
     private void registerDetector() {
+    	// 获取指定类型的传感器对象（加速度传感器）
         mSensor = mSensorManager.getDefaultSensor(
-            Sensor.TYPE_ACCELEROMETER /*| 
+            Sensor.TYPE_ACCELEROMETER /*|  
             Sensor.TYPE_MAGNETIC_FIELD | 
             Sensor.TYPE_ORIENTATION*/);
+       // 将传感器对象和传感器操作类绑定
         mSensorManager.registerListener(mStepDetector,
             mSensor,
+            // 尽可能快的获取传感器数据
             SensorManager.SENSOR_DELAY_FASTEST);
     }
 
+    // 注销步数检测服务
     private void unregisterDetector() {
         mSensorManager.unregisterListener(mStepDetector);
     }
@@ -130,7 +152,6 @@ public class StepService extends Service {
         return mBinder;
     }
 
-
     // 从activity中接收消息
     private final IBinder mBinder = new StepBinder();
 
@@ -138,13 +159,13 @@ public class StepService extends Service {
         public void stepsChanged(int value);
     }
     
+    // 回调方法
     private ICallback mCallback;
-
     public void registerCallback(ICallback cb) {
         mCallback = cb;
     }
     
-    
+    // 重新加载设置信息
     public void reloadSettings() {
         mSettings = PreferenceManager.getDefaultSharedPreferences(this);
         
@@ -154,14 +175,14 @@ public class StepService extends Service {
             );
         }
         
-        if (mStepDisplayer    != null) mStepDisplayer.reloadSettings();
+        if (mStepDisplayer != null) mStepDisplayer.reloadSettings();
     }
     
     public void resetValues() {
         mStepDisplayer.setSteps(0);
     }
     
-    // 从PaceNotifier传递步数到activity
+    // 从PaceNotifier传递步数到activity（回调方法）
     private StepDisplayer.Listener mStepListener = new StepDisplayer.Listener() {
         public void stepsChanged(int value) {
             mSteps = value;
@@ -175,7 +196,7 @@ public class StepService extends Service {
     };
    
     
-    // 当service运行时，在状态栏显示通知
+    // 当service运行时，在状态栏显示通知（实现前台service运行）
     private void showNotification() {
         CharSequence text = getText(R.string.app_name);
         Notification notification = new Notification(R.drawable.ic_notification, null,
@@ -193,7 +214,7 @@ public class StepService extends Service {
     }
 
 
-    // 通过BroadcastReceiver来处理ACTION_SCREEN_OFF
+    // 通过BroadcastReceiver来处理ACTION_SCREEN_OFF事件，也就是当我们按power键关闭屏幕时的处理事件
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -211,19 +232,25 @@ public class StepService extends Service {
         }
     };
 
+    // 设置屏幕状态
     private void acquireWakeLock() {
+    	// 获取系统service
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         int wakeFlags;
         if (mPedometerSettings.wakeAggressively()) {
+        	// 屏幕暗淡，键盘关闭（由用户活动触发该配置）
             wakeFlags = PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP;
         }
         else if (mPedometerSettings.keepScreenOn()) {
+        	// 屏幕暗淡，键盘关闭
             wakeFlags = PowerManager.SCREEN_DIM_WAKE_LOCK;
         }
         else {
+        	// 屏幕关闭，键盘关闭
             wakeFlags = PowerManager.PARTIAL_WAKE_LOCK;
         }
         wakeLock = pm.newWakeLock(wakeFlags, TAG);
+        // 根据wakeFlags设置， 申请屏幕常亮
         wakeLock.acquire();
     }
 
